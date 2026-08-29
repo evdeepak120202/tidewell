@@ -12,11 +12,21 @@ concurrency:
 jobs:
   test:
     name: Build and test
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
+
+      # Pin the toolchain explicitly. The runner image can carry several Xcodes and the
+      # default is not always the newest, so a green build here has to mean the same
+      # compiler a contributor has locally.
+      - name: Select Xcode
+        run: |
+          ls /Applications | grep -i "^Xcode" || true
+          LATEST=$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -1)
+          echo "using $LATEST"
+          sudo xcode-select -s "$LATEST"
       - name: Show toolchain
-        run: swift --version && sw_vers
+        run: swift --version && sw_vers && xcodebuild -version
 
       # Both architectures, because an arm-only assumption must not land silently while
       # Intel Macs on macOS 14–26 are still supported.
@@ -29,7 +39,7 @@ jobs:
 
   guarantees:
     name: Safety guarantees
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
 
@@ -54,7 +64,7 @@ jobs:
 
   lint:
     name: Format
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
       - name: swift-format lint
