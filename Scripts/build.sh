@@ -46,19 +46,24 @@ CONTENTS="$APP/Contents"
 # audience with a known end date, since macOS 26 is the last release supporting Intel.
 ARCHS="${ARCHS:-arm64}"
 
+# Extra flags for `swift build`. Homebrew builds inside its own sandbox, and SwiftPM
+# sandboxes manifest compilation with sandbox-exec — the two cannot nest, so the formula
+# sets SWIFT_FLAGS="--disable-sandbox". Empty for an ordinary local build.
+SWIFT_FLAGS="${SWIFT_FLAGS:-}"
+
 if [ "$ARCHS" = "universal" ]; then
     echo "==> Building ($CONFIG, arm64 + x86_64)"
-    swift build -c "$CONFIG" --arch arm64
-    swift build -c "$CONFIG" --arch x86_64
-    ARM_BIN="$(swift build -c "$CONFIG" --arch arm64 --show-bin-path)"
-    X86_BIN="$(swift build -c "$CONFIG" --arch x86_64 --show-bin-path)"
+    swift build $SWIFT_FLAGS -c "$CONFIG" --arch arm64
+    swift build $SWIFT_FLAGS -c "$CONFIG" --arch x86_64
+    ARM_BIN="$(swift build $SWIFT_FLAGS -c "$CONFIG" --arch arm64 --show-bin-path)"
+    X86_BIN="$(swift build $SWIFT_FLAGS -c "$CONFIG" --arch x86_64 --show-bin-path)"
     BIN_PATH="build/universal"
     mkdir -p "$BIN_PATH"
     lipo -create "$ARM_BIN/$APP_NAME" "$X86_BIN/$APP_NAME" -output "$BIN_PATH/$APP_NAME"
 else
     echo "==> Building ($CONFIG, arm64)"
-    swift build -c "$CONFIG" --arch arm64
-    BIN_PATH="$(swift build -c "$CONFIG" --arch arm64 --show-bin-path)"
+    swift build $SWIFT_FLAGS -c "$CONFIG" --arch arm64
+    BIN_PATH="$(swift build $SWIFT_FLAGS -c "$CONFIG" --arch arm64 --show-bin-path)"
 fi
 
 if [ ! -f "build/icon/$APP_NAME.icns" ]; then

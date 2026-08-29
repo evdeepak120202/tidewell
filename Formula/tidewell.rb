@@ -9,8 +9,8 @@
 class Tidewell < Formula
   desc "File organiser for macOS that cannot delete your files"
   homepage "https://iam-deepak.space"
-  url "https://github.com/evdeepak120202/tidewell/archive/refs/tags/v0.1.0.tar.gz"
-  sha256 "REPLACE_ON_RELEASE"
+  url "https://github.com/evdeepak120202/tidewell/archive/refs/tags/v0.1.0-beta.1.tar.gz"
+  sha256 "6607045a57bb6447ba68f50d4f36d4489705a087ffaace1f751e706538f80659"
   license "GPL-3.0-or-later"
   head "https://github.com/evdeepak120202/tidewell.git", branch: "main"
 
@@ -18,6 +18,13 @@ class Tidewell < Formula
   depends_on macos: :sonoma
 
   def install
+    # Homebrew builds inside its own sandbox and SwiftPM sandboxes manifest compilation
+    # with sandbox-exec. The two cannot nest — the build fails with
+    # "sandbox_apply: Operation not permitted" — so SwiftPM's own sandbox is turned off.
+    ENV["SWIFT_FLAGS"] = "--disable-sandbox"
+    # Homebrew's temporary HOME is not writable by SwiftPM's caches.
+    ENV["SWIFTPM_CACHE_DIR"] = buildpath/".swiftpm-cache"
+
     # Build the bundle exactly the way a developer would, so what the user runs is what
     # the repository describes.
     system "./Scripts/build.sh"
