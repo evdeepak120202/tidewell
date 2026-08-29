@@ -22,6 +22,9 @@ class Tidewell < Formula
     # with sandbox-exec. The two cannot nest — the build fails with
     # "sandbox_apply: Operation not permitted" — so SwiftPM's own sandbox is turned off.
     ENV["SWIFT_FLAGS"] = "--disable-sandbox"
+    # Without this the bundle reports build.sh's fallback version rather than the one
+    # being installed, so About — and therefore every bug report — would be wrong.
+    ENV["VERSION"] = version.to_s
     # Homebrew's temporary HOME is not writable by SwiftPM's caches.
     ENV["SWIFTPM_CACHE_DIR"] = buildpath/".swiftpm-cache"
 
