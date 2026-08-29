@@ -9,8 +9,8 @@
 class Tidewell < Formula
   desc "File organiser for macOS that cannot delete your files"
   homepage "https://iam-deepak.space"
-  url "https://github.com/evdeepak120202/tidewell/archive/refs/tags/v0.1.0-beta.1.tar.gz"
-  sha256 "6607045a57bb6447ba68f50d4f36d4489705a087ffaace1f751e706538f80659"
+  url "https://github.com/evdeepak120202/tidewell/archive/refs/tags/v0.1.0-beta.2.tar.gz"
+  sha256 "4eb25c90e4e06c8e021d27966395bf02cc7f7e849ff9698572b1278df78c7350"
   license "GPL-3.0-or-later"
   head "https://github.com/evdeepak120202/tidewell.git", branch: "main"
 
