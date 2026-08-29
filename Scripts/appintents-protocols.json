@@ -1,0 +1,3 @@
+["AppIntent","AppEntity","AppEnum","AppShortcutsProvider","EntityQuery","EntityPropertyQuery",
+ "PersistentAppEntity","TransientAppEntity","DynamicOptionsProvider","IntentValueQuery",
+ "URLRepresentableEntity","URLRepresentableEnum","URLRepresentableIntent"]

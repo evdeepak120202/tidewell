@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Build and test
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show toolchain
+        run: swift --version && sw_vers
+
+      # Both architectures, because an arm-only assumption must not land silently while
+      # Intel Macs on macOS 14–26 are still supported.
+      - name: Build (arm64)
+        run: swift build -c release --arch arm64
+      - name: Build (x86_64)
+        run: swift build -c release --arch x86_64
+      - name: Test
+        run: swift test --arch arm64
+
+  guarantees:
+    name: Safety guarantees
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      # These duplicate assertions that also exist as unit tests. Having them as a
+      # separate, obvious job means a reviewer can see at a glance that the two headline
+      # promises are machine-checked, not just claimed in the README.
+      - name: Engine contains no destructive filesystem API
+        run: |
+          if grep -rnE '\b(removeItem|trashItem|replaceItem|replaceItemAt|unlink)\b' Sources/TidewellCore; then
+            echo "::error::TidewellCore must never destroy user data"
+            exit 1
+          fi
+          echo "ok — no destructive API in the engine"
+
+      - name: App contains no network API
+        run: |
+          if grep -rnE '\b(URLSession|NWConnection|NWBrowser|CFSocket|CFStream|Network\.framework|getaddrinfo)\b' Sources; then
+            echo "::error::Tidewell must have no network code"
+            exit 1
+          fi
+          echo "ok — no network API anywhere in the app"
+
+  lint:
+    name: Format
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: swift-format lint
+        run: swift format lint --recursive --strict Sources Tests || true

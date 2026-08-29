@@ -1,0 +1,51 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build arm64
+        run: ./Scripts/build.sh
+      - name: Package arm64
+        run: |
+          mkdir -p dist
+          ditto -c -k --keepParent build/Tidewell.app dist/Tidewell-arm64.zip
+
+      # Universal is the transitional artifact for Intel Macs on macOS 14–26. It is
+      # retired when the minimum moves past macOS 26 or Intel security updates end.
+      - name: Build universal
+        run: ARCHS=universal ./Scripts/build.sh
+      - name: Package universal
+        run: ditto -c -k --keepParent build/Tidewell.app dist/Tidewell-universal.zip
+
+      # Checksums stand in for notarisation: this project has no paid Apple membership,
+      # so verifiability is what replaces Apple's signature as the trust signal.
+      - name: Checksums
+        run: cd dist && shasum -a 256 *.zip | tee SHA256SUMS.txt
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/Tidewell-arm64.zip
+            dist/Tidewell-universal.zip
+            dist/SHA256SUMS.txt
+          body: |
+            Verify your download:
+
+                shasum -a 256 -c SHA256SUMS.txt
+
+            These builds are **not notarised** — notarisation requires a paid Apple
+            Developer membership this project does not have. macOS will warn on first
+            launch. The recommended install avoids that entirely by compiling on your
+            own machine:
+
+                brew install evdeepak120202/tap/tidewell

@@ -1,0 +1,19 @@
+name: Feature request
+description: Suggest something
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the situation, not the solution.
+    validations: { required: true }
+  - type: textarea
+    id: idea
+    attributes:
+      label: What you have in mind
+  - type: markdown
+    attributes:
+      value: |
+        Out of scope, so nobody wastes their time: cloud sync, accounts, telemetry,
+        Windows/Linux, and running arbitrary scripts on file arrival. See SUPPORT.md.

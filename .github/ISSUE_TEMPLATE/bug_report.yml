@@ -1,0 +1,39 @@
+name: Bug report
+description: Something went wrong
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **If a file did not move**, open the folder in Tidewell first and read the
+        preview — it names every file it is leaving alone and why. The usual answers are:
+        still downloading, inside its arrival delay, it is a folder, or a rule excludes it.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you expected, and what happened instead.
+    validations: { required: true }
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+    validations: { required: true }
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+      placeholder: "26.6.2"
+    validations: { required: true }
+  - type: dropdown
+    id: chip
+    attributes:
+      label: Chip
+      options: [Apple silicon, Intel]
+    validations: { required: true }
+  - type: checkboxes
+    id: data
+    attributes:
+      label: Data safety
+      options:
+        - label: No file was deleted (Tidewell cannot delete — if one vanished, say so loudly here)

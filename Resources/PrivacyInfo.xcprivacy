@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Tidewell has no network code, no accounts and no analytics. There is nothing to
+         collect and nothing to track. -->
+    <key>NSPrivacyTracking</key>                <false/>
+    <key>NSPrivacyTrackingDomains</key>         <array/>
+    <key>NSPrivacyCollectedDataTypes</key>      <array/>
+
+    <key>NSPrivacyAccessedAPITypes</key>
+    <array>
+        <dict>
+            <!-- File timestamps: whether a file has settled, how old it is for
+                 archiving, and which month folder it belongs in. -->
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array><string>C617.1</string></array>
+        </dict>
+        <dict>
+            <!-- UserDefaults: not used for Tidewell's own storage (settings live in a
+                 JSON file), but SMAppService and SwiftUI read it on the app's behalf. -->
+            <key>NSPrivacyAccessedAPIType</key>
+            <string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+            <key>NSPrivacyAccessedAPITypeReasons</key>
+            <array><string>CA92.1</string></array>
+        </dict>
+    </array>
+</dict>
+</plist>
