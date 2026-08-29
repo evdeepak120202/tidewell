@@ -41,8 +41,10 @@ class Tidewell < Formula
     # The link points at `opt_prefix`, not the versioned Cellar path: opt is stable across
     # upgrades, so the folder-access grants and login-item registration macOS ties to the
     # bundle path survive a `brew upgrade` instead of resetting every time.
-    (Dir.home/"Applications").mkpath
-    ln_sf opt_prefix/"Tidewell.app", Dir.home/"Applications/Tidewell.app"
+    # `Dir.home` is a String, so it needs wrapping before Pathname's `/` works.
+    user_apps = Pathname.new(Dir.home)/"Applications"
+    user_apps.mkpath
+    ln_sf opt_prefix/"Tidewell.app", user_apps/"Tidewell.app"
 
     bin.write_exec_script "#{prefix}/Tidewell.app/Contents/MacOS/Tidewell"
   end
