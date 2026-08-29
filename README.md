@@ -178,7 +178,7 @@ do not mind paying, buy Hazel. Tidewell is for people who want the folder tidied
 handing an automated tool the ability to delete things.
 
 Arbitrary script execution is missing on purpose: a folder-watching background agent that
-can run shell is a permanent security hole. Use [Shortcuts](#) via App Intents instead.
+can run shell is a permanent security hole. Use Shortcuts via App Intents instead — see [Shortcuts](#shortcuts) below.
 
 ## Safety, in detail
 
