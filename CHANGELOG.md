@@ -5,6 +5,19 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.0-beta.4] — 2026-08-29
+
+### Added
+- **A rules editor**, and an **App Sweep pane**. beta.3 shipped both engines with no way
+  to reach either from the app — the rule engine could only be driven by hand-editing
+  JSON inside the sandbox container, and App Sweep could not be reached at all. Rules now
+  live in the folder pane with starters for the common cases; App Sweep is its own item in
+  the sidebar.
+
+### Changed
+- The old filename-pattern list is renamed **Name patterns** and described as the simpler
+  form of a rule, so the two are not confused.
+
 ## [0.1.0-beta.3] — 2026-08-29
 
 ### Added

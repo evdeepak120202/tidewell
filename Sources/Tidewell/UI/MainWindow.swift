@@ -17,6 +17,7 @@ struct MainWindow: View {
         case folder(UUID)
         case activity
         case insights
+        case appSweep
     }
 
     var body: some View {
@@ -66,6 +67,8 @@ struct MainWindow: View {
                     .tag(Selection.insights)
                 Label("Activity", systemImage: "clock.arrow.circlepath")
                     .tag(Selection.activity)
+                Label("App Sweep", systemImage: "shippingbox")
+                    .tag(Selection.appSweep)
             }
         }
         .listStyle(.sidebar)
@@ -92,6 +95,8 @@ struct MainWindow: View {
             }
         case .insights:
             InsightsView()
+        case .appSweep:
+            AppSweepView()
         case .activity, nil:
             ActivityView()
         }

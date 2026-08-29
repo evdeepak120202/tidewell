@@ -22,6 +22,7 @@ struct FolderDetailView: View {
             VStack(alignment: .leading, spacing: 22) {
                 heading
                 schemeSection
+                RuleEditor(folder: folder)
                 nameRulesSection
                 rulesSection
                 housekeepingSection
@@ -95,7 +96,7 @@ struct FolderDetailView: View {
     private var nameRulesSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("Name rules").font(.system(size: 12, weight: .semibold))
+                Text("Name patterns").font(.system(size: 12, weight: .semibold))
                 Spacer()
                 Button {
                     var copy = folder
@@ -104,8 +105,8 @@ struct FolderDetailView: View {
                 } label: { Label("Add", systemImage: "plus") }
                     .controlSize(.small)
             }
-            Text("Checked before file type, top to bottom — the first match wins. "
-                 + "Use * for any run of characters, ? for one.")
+            Text("A simpler form of the rules above: just a filename pattern and a folder. "
+                 + "Checked after rules, before file type.")
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
 
