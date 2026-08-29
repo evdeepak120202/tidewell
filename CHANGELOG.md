@@ -7,16 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.0-beta.2] — 2026-08-29
 
-### Fixed
-- `brew install` failed with `sandbox_apply: Operation not permitted`. Homebrew builds
-  inside its own sandbox and SwiftPM sandboxes manifest compilation with `sandbox-exec`;
-  the two cannot nest. `Scripts/build.sh` now honours a `SWIFT_FLAGS` variable and the
-  formula sets `--disable-sandbox`. Downloaded builds were unaffected.
-
-## [0.1.0-beta.1] — 2026-08-29
-
 First beta. The engine and its guarantees are complete and tested; the surface around
 them is where feedback is wanted.
+
+> `0.1.0-beta.1` was withdrawn within minutes: `brew install` failed with
+> `sandbox_apply: Operation not permitted` before compiling anything, because Homebrew
+> builds inside its own sandbox and SwiftPM sandboxes manifest compilation with
+> `sandbox-exec` — the two cannot nest. `Scripts/build.sh` now honours `SWIFT_FLAGS` and
+> the formula passes `--disable-sandbox`. The formula also passes the version through, so
+> the bundle no longer reports a version that was never released.
 
 ### Added
 - First-run setup wizard: four screens, ending in a real preview of your own files.
