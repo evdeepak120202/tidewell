@@ -14,7 +14,7 @@ jobs:
     name: Build and test
     runs-on: macos-26
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Pin the toolchain explicitly. The runner image can carry several Xcodes and the
       # default is not always the newest, so a green build here has to mean the same
@@ -41,7 +41,7 @@ jobs:
     name: Safety guarantees
     runs-on: macos-26
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # These duplicate assertions that also exist as unit tests. Having them as a
       # separate, obvious job means a reviewer can see at a glance that the two headline
@@ -66,6 +66,6 @@ jobs:
     name: Format
     runs-on: macos-26
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: swift-format lint
         run: swift format lint --recursive --strict Sources Tests || true
