@@ -13,6 +13,10 @@
 </p>
 
 <p align="center">
+  <a href="https://tidewell.iam-deepak.space"><strong>tidewell.iam-deepak.space</strong></a>
+</p>
+
+<p align="center">
   <a href="../../actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/evdeepak120202/tidewell/ci.yml?branch=main&label=CI"></a>
   <a href="../../releases"><img alt="Release" src="https://img.shields.io/github/v/release/evdeepak120202/tidewell?include_prereleases"></a>
   <a href="LICENSE"><img alt="Licence" src="https://img.shields.io/badge/licence-GPL--3.0--or--later-blue"></a>
@@ -51,6 +55,10 @@ The worst a bug can do is put a file in the wrong folder, and you can undo that.
 brew install evdeepak120202/tap/tidewell
 ```
 
+Or download it from **[tidewell.iam-deepak.space](https://tidewell.iam-deepak.space)**, which picks the right
+build for your Mac. Homebrew is still the recommendation: a downloaded build is not
+notarised and macOS will make you approve it in System Settings first.
+
 <details>
 <summary>From source</summary>
 
@@ -66,8 +74,9 @@ cd tidewell
 <details>
 <summary>Download a build (shows a security warning — here is why)</summary>
 
-Grab `Tidewell-arm64.zip` from [Releases](../../releases). On an Intel Mac, take
-`Tidewell-universal.zip` instead.
+Grab `Tidewell-arm64.zip` from [Releases](../../releases), or use
+[tidewell.iam-deepak.space](https://tidewell.iam-deepak.space) which detects which one you need. On an Intel Mac,
+take `Tidewell-universal.zip`.
 
 These builds are **not notarised**, because notarisation requires a paid Apple Developer
 membership this project does not have. macOS will refuse to open the app until you go to
@@ -244,5 +253,5 @@ covered by that grant — see [TRADEMARKS.md](TRADEMARKS.md). Forks must rename,
 user can always tell an official build from one that has had its guarantees removed.
 
 <p align="center">
-  <sub><a href="https://iam-deepak.space">iam-deepak.space</a></sub>
+  <sub><a href="https://tidewell.iam-deepak.space">tidewell.iam-deepak.space</a> · <a href="https://iam-deepak.space">iam-deepak.space</a></sub>
 </p>
