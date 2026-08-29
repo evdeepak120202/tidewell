@@ -5,6 +5,32 @@ All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.0-beta.3] — 2026-08-29
+
+### Added
+- **App Sandbox.** Tidewell now runs confined: it can reach only the folders you have
+  chosen, and the kernel enforces that rather than the code promising it. Access survives
+  quitting through security-scoped bookmarks, and a bookmark that goes stale is re-minted
+  and saved — one that resolves without being refreshed keeps working for a launch and
+  then quietly stops.
+- **Rules with conditions and actions.** Name, extension, kind, size, age and duplicate
+  status, combined with all/any/none, evaluated before name patterns and before file type.
+  First match wins. The action set is deliberately incapable of destruction: move, tag,
+  colour label, leave alone, set aside for review — no delete, and no run-a-script.
+- **App Sweep.** Point Tidewell at an app you have removed and it finds what it left in
+  your Library, matched on bundle identifier only. It **gathers** them into a folder for
+  you to look through rather than deleting them, because "probably belongs to that app"
+  is a guess and a guess should not be able to destroy a licence file.
+
+### Changed
+- **Breaking: settings move into the sandbox container.** A confined app cannot read
+  `~/Library/Application Support/Tidewell`, so existing watched folders are not carried
+  over and setup runs again. Your files are untouched; only Tidewell's own configuration
+  is affected. The old file is left where it was if you want to consult it.
+- App Sweep needs one-time access to your Library folder, granted through a panel like any
+  other folder. That is more friction than an unconfined competitor, and a much better
+  guarantee about what the app can reach.
+
 ## [0.1.0-beta.2] — 2026-08-29
 
 First beta. The engine and its guarantees are complete and tested; the surface around

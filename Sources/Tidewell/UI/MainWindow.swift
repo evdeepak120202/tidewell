@@ -109,7 +109,7 @@ struct MainWindow: View {
 
         guard panel.runModal() == .OK else { return }
         for url in panel.urls {
-            if let complaint = env.addFolder(url) {
+            if let complaint = env.addPickedFolder(url) {
                 let alert = NSAlert()
                 alert.messageText = "Can't watch that folder"
                 alert.informativeText = complaint

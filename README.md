@@ -46,6 +46,8 @@ The worst a bug can do is put a file in the wrong folder, and you can undo that.
 - **It waits for downloads.** A file still being written is sampled twice and skipped.
 - **Nothing leaves your Mac.** There is no network code in the app. That is [checked in
   CI](.github/workflows/ci.yml), not just claimed here.
+- **It can only reach folders you chose.** Tidewell runs in the App Sandbox, so that is
+  enforced by macOS rather than promised by the code.
 
 ## Install
 
@@ -116,6 +118,30 @@ contents with size as a pre-filter, so a file that merely shares a name is filed
 **Old files can be archived.** Files untouched past a chosen age move to `Archive/YYYY-MM`.
 The sweep only looks inside folders Tidewell itself created — never the archive, never
 folders you made.
+
+### Rules
+
+Beyond sorting by type, a rule combines conditions — name, extension, kind, size, age,
+whether it is a duplicate — with **all**, **any** or **none**, and says what to do when
+they hold. Rules are checked before everything else, in your order, first match wins.
+
+The actions are: file into a folder, add a Finder tag, set a colour label, leave it alone,
+or set it aside for review. **There is no delete action, and no run-a-script action.**
+Hazel has both. A folder-watching background agent that can execute shell is a permanent
+remote-code-execution surface, and a rule engine that can delete turns a mistyped pattern
+into data loss.
+
+### App Sweep
+
+Removed an app and want the hundreds of megabytes it left in your Library? Point Tidewell
+at it and it finds them — matched on **bundle identifier only**, never on the app's name,
+because a name match would sweep anything containing the word.
+
+It then **gathers** them into a folder for you to look through. It does not delete them.
+"Probably belongs to that app" is a guess, and a guess should not be able to destroy a
+licence file or a save game.
+
+This needs one-time access to your Library folder, granted through a panel like any other.
 
 ### Six starting points
 
@@ -199,6 +225,7 @@ can run shell is a permanent security hole. Use Shortcuts via App Intents instea
 | Never moves a file mid-download | Partial extensions skipped; everything else sampled twice |
 | Never organises a dangerous root | `/`, `/System`, `/Applications`, your home folder and volume roots are refused |
 | Never leaves your Mac | CI greps all sources for `URLSession`, `NWConnection`, `CFSocket` … |
+| Never reaches a folder you didn't choose | App Sandbox — enforced by macOS, not by the code |
 
 ## Building
 
@@ -211,6 +238,23 @@ ARCHS=universal ./Scripts/build.sh      # arm64 + x86_64
 
 A Swift package plus a build script rather than an `.xcodeproj`, so Info.plist, icon and
 signing stay reviewable in a diff.
+
+## Sandboxing
+
+Tidewell runs inside the **App Sandbox**. A non-sandboxed app inherits your full user
+permissions — it *can* read and move any file your account can, and only its own code
+stops it. Sandboxed, it can reach the folders you picked and nothing else, and the kernel
+is what refuses the rest.
+
+That means access has to survive quitting, which it does through **security-scoped
+bookmarks**: a token minted when you choose a folder, stored, and resolved on each launch.
+Bookmarks can go stale — a moved folder, a macOS upgrade — so Tidewell re-mints and saves
+them when that happens, rather than working for one launch and then quietly stopping.
+
+The entitlements are deliberately short, and everything absent from
+[`Resources/Tidewell.entitlements`](Resources/Tidewell.entitlements) is refused: no
+network, no camera or microphone, no contacts or calendars, and no blanket access to
+Downloads, Documents or Desktop. Those are chosen, not assumed.
 
 ## Compatibility
 

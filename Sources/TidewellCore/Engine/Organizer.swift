@@ -30,6 +30,7 @@ public struct Organizer: Sendable {
     private let mover: FileMover
     private let stability: StabilityGate
     private let duplicates = DuplicateDetector()
+    private let evaluator = RuleEvaluator()
 
     /// Shared so the classification cache survives between runs.
     private let intelligence: IntelligenceEngine?
@@ -80,10 +81,37 @@ public struct Organizer: Sendable {
 
             let category = classifier.category(for: entry)
 
-            // A filename pattern outranks the type tables. Twenty-three
-            // `day-sheet-…pdf` are all "Documents" by type, which is true and
-            // useless; the pattern is what the user actually meant.
+            // Precedence, most specific first:
+            //   1. condition/action rules, in the user's order
+            //   2. filename patterns (the older, simpler form)
+            //   3. the type tables
+            // A filename pattern outranks type because twenty-three `day-sheet-…pdf` are
+            // all "Documents" by type, which is true and useless.
             let matchedRule = folder.nameRule(matching: entry.lastPathComponent)
+
+            // Rules are evaluated before anything else decides a destination.
+            var ruleFolder: String?
+            var ruleLeftAlone = false
+            if !folder.rules.isEmpty {
+                let facts = evaluator.facts(for: entry, category: category, isDuplicate: false)
+                if let rule = evaluator.firstMatch(in: folder.rules, for: facts) {
+                    for action in rule.actions {
+                        switch action {
+                        case .moveTo(let name):    ruleFolder = name
+                        case .markForReview:       ruleFolder = folder.reviewFolderName
+                        case .leaveAlone:          ruleLeftAlone = true
+                        // Tags and labels are metadata, applied after the move rather
+                        // than deciding where it goes.
+                        case .addFinderTag, .setColourLabel: break
+                        }
+                    }
+                }
+            }
+
+            if ruleLeftAlone {
+                skips.append(SkippedFile(url: entry, reason: .excludedByRule)); continue
+            }
+
 
             if matchedRule == nil, folder.ignoredCategories.contains(category) {
                 skips.append(SkippedFile(url: entry, reason: .excludedByRule)); continue
@@ -110,7 +138,8 @@ public struct Organizer: Sendable {
 
             // A matched rule files flat into its own folder — the scheme's month or
             // extension nesting is a property of type sorting, not of the rule.
-            let components: [String]? = matchedRule.map { [$0.folderName] }
+            let components: [String]? = ruleFolder.map { [$0] }
+                ?? matchedRule.map { [$0.folderName] }
                 ?? label.map { [$0.defaultFolderName] }
                 ?? folder.scheme.destinationComponents(
                     category: category,

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Tidewell runs inside the App Sandbox. It can only reach folders you have chosen
+         yourself, and the kernel enforces that rather than the code promising it. -->
+    <key>com.apple.security.app-sandbox</key>
+    <true/>
+
+    <!-- The folder picker grants access to what you select. A security-scoped bookmark is
+         stored so that access survives quitting; without this entitlement the grant would
+         last only until the app closed, and it would stop watching on every restart. -->
+    <key>com.apple.security.files.user-selected.read-write</key>
+    <true/>
+    <key>com.apple.security.files.bookmarks.app-scope</key>
+    <true/>
+
+    <!-- Deliberately absent, and worth stating:
+           · no network client or server — the app has no networking code at all
+           · no camera, microphone, location, contacts, calendars or photos
+           · no Downloads/Documents/Desktop blanket access — those are chosen, not assumed
+           · no JIT, no unsigned executable memory, no library validation exceptions
+         Anything not listed above is refused by the kernel, whatever the code attempts. -->
+</dict>
+</plist>

@@ -28,6 +28,9 @@ public final class AppEnvironment {
     @ObservationIgnored private let intelligence = IntelligenceEngine()
     @ObservationIgnored private let organizer: Organizer
     @ObservationIgnored private let sweeper = ArchiveSweeper()
+
+    /// Holds security-scoped access open for the app's lifetime.
+    @ObservationIgnored private let access = FolderAccess()
     private let watcher = FolderWatcher()
 
     /// Folders with a pass in flight, so the UI can show progress and the watcher can
@@ -49,6 +52,11 @@ public final class AppEnvironment {
 
     /// Called from `applicationDidFinishLaunching`, never from `init`.
     public func start() {
+        // Reopen every watched folder before the watcher is built. In the sandbox a stored
+        // URL alone grants nothing — the bookmark is the permission, and it has to be
+        // resolved and opened first or FSEvents silently watches nothing.
+        Task { await restoreFolderAccess() }
+
         watcher.onChange = { [weak self] changed in
             guard let self else { return }
             for url in changed { self.handleChange(at: url) }
@@ -56,6 +64,33 @@ public final class AppEnvironment {
         refreshWatchSet()
         Task { await requestNotificationAuthorizationIfNeeded() }
         Task { await intelligence.primeCache(settings.classificationCache) }
+    }
+
+    /// Resolve stored bookmarks and hold access open.
+    ///
+    /// A stale bookmark is re-minted and written straight back: one that resolves but is
+    /// not refreshed keeps working for this launch and then stops, which looks like the
+    /// app breaking itself overnight.
+    private func restoreFolderAccess() async {
+        for index in settings.folders.indices {
+            let folder = settings.folders[index]
+            guard let bookmark = folder.bookmark else {
+                // Added before sandboxing, or created while running unsandboxed. Nothing
+                // to resolve; the plain URL is all there is.
+                continue
+            }
+            do {
+                let (url, refreshed) = try FolderAccess.resolve(bookmark)
+                await access.begin(url)
+                settings.folders[index].url = url
+                if let refreshed { settings.folders[index].bookmark = refreshed }
+            } catch {
+                // Leave the folder in the list rather than dropping it: the user should
+                // see it and be able to re-grant, not find it silently gone.
+                settings.folders[index].isAutoEnabled = false
+            }
+        }
+        refreshWatchSet()
     }
 
     /// Bring the watch set in line with the current settings.
@@ -92,6 +127,35 @@ public final class AppEnvironment {
         cancelRetries()
         watcher.stop()
         settings.save()
+        // Balance every startAccessingSecurityScopedResource. Unbalanced access leaks
+        // kernel resources for the life of the process.
+        Task { await access.releaseAll() }
+    }
+
+    /// Add a folder the user just chose in a panel, minting its bookmark.
+    ///
+    /// The bookmark has to be created **now**, while the picker's grant is still live —
+    /// minting it later, from a stored path, fails inside the sandbox.
+    public func addPickedFolder(_ url: URL) -> String? {
+        let standardized = url.standardizedFileURL
+        if SafetyGuard.isForbiddenRoot(standardized) {
+            return "\(standardized.lastPathComponent) is a system or home root — Tidewell will not organise it."
+        }
+        guard !settings.folders.contains(where: {
+            $0.url.standardizedFileURL == standardized
+        }) else { return "\(standardized.lastPathComponent) is already being watched." }
+
+        let bookmark = try? FolderAccess.makeBookmark(for: standardized)
+        if bookmark == nil, FolderAccess.isSandboxed {
+            return "Couldn't keep access to \(standardized.lastPathComponent). Try choosing it again."
+        }
+
+        var folder = WatchedFolder(url: standardized, bookmark: bookmark)
+        folder.usesIntelligence = false
+        settings.folders.append(folder)
+        Task { await access.begin(standardized) }
+        refreshWatchSet()
+        return nil
     }
 
     // MARK: Running

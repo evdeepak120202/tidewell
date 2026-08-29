@@ -22,6 +22,9 @@ apps but the consequences of a bug are direct. In scope:
   guardrails below.
 - Privilege or sandbox escape, or execution of code from a watched folder.
 
+In scope, and worth stating explicitly now that the app is sandboxed: any way to reach a
+path outside the granted folders, and any misuse of a security-scoped bookmark.
+
 Out of scope: the app deliberately has no network code, no accounts, no telemetry and no
 server. There is nothing to attack remotely.
 
@@ -36,6 +39,7 @@ These are enforced in code and tested, not merely intended:
 | Never leaves the machine | CI grep for `URLSession`, `NWConnection`, `CFSocket` and friends |
 | Never acts on a file still being written | `StabilityGate` samples twice; partial-download extensions skipped |
 | Every action reversible | Journal records both ends of every move |
+| Cannot reach folders you did not choose | App Sandbox, enforced by the kernel |
 
 ## On-device AI
 

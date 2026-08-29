@@ -11,9 +11,9 @@ public struct WatchedFolder: Codable, Sendable, Identifiable, Hashable {
     // loads — losing every watched folder on upgrade would be a poor trade for four
     // new options.
     private enum CodingKeys: String, CodingKey {
-        case id, url, isAutoEnabled, scheme, folderNames, ignoredCategories
+        case id, url, bookmark, isAutoEnabled, scheme, folderNames, ignoredCategories
         case ignoredExtensions, overrides, minimumAgeSeconds
-        case nameRules, quarantinesDuplicates, duplicatesFolderName
+        case nameRules, rules, quarantinesDuplicates, duplicatesFolderName
         case archiveAfterDays, archiveFolderName, lastArchiveSweep, usesIntelligence
     }
 
@@ -21,6 +21,7 @@ public struct WatchedFolder: Codable, Sendable, Identifiable, Hashable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = try c.decode(UUID.self, forKey: .id)
         url = try c.decode(URL.self, forKey: .url)
+        bookmark = try c.decodeIfPresent(Data.self, forKey: .bookmark)
         isAutoEnabled = try c.decodeIfPresent(Bool.self, forKey: .isAutoEnabled) ?? true
         scheme = try c.decodeIfPresent(SortScheme.self, forKey: .scheme) ?? .category
         folderNames = try c.decodeIfPresent([FileCategory: String].self, forKey: .folderNames) ?? [:]
@@ -29,6 +30,7 @@ public struct WatchedFolder: Codable, Sendable, Identifiable, Hashable {
         overrides = try c.decodeIfPresent([String: FileCategory].self, forKey: .overrides) ?? [:]
         minimumAgeSeconds = try c.decodeIfPresent(Int.self, forKey: .minimumAgeSeconds) ?? 0
         nameRules = try c.decodeIfPresent([NameRule].self, forKey: .nameRules) ?? []
+        rules = try c.decodeIfPresent([Rule].self, forKey: .rules) ?? []
         quarantinesDuplicates = try c.decodeIfPresent(Bool.self, forKey: .quarantinesDuplicates) ?? true
         duplicatesFolderName = try c.decodeIfPresent(String.self, forKey: .duplicatesFolderName) ?? "Duplicates"
         archiveAfterDays = try c.decodeIfPresent(Int.self, forKey: .archiveAfterDays) ?? 0
@@ -40,6 +42,13 @@ public struct WatchedFolder: Codable, Sendable, Identifiable, Hashable {
     }
     public let id: UUID
     public var url: URL
+
+    /// Security-scoped bookmark, so access survives a quit.
+    ///
+    /// Absent on folders added before sandboxing, and absent when the app is running
+    /// unsandboxed — in both cases the plain URL still works, so this is additive rather
+    /// than a hard requirement.
+    public var bookmark: Data?
 
     /// Auto-filing for this folder specifically. The app-wide switch is separate, and
     /// both must be on for the watcher to act.
@@ -64,7 +73,13 @@ public struct WatchedFolder: Codable, Sendable, Identifiable, Hashable {
 
     /// Filename patterns, checked before the type tables. First match wins, so order
     /// in this array is the user's priority order.
+    ///
+    /// Superseded by `rules` for anything new — kept because existing settings files
+    /// contain them and silently dropping a user's rules on upgrade is not acceptable.
     public var nameRules: [NameRule]
+
+    /// Condition/action rules, evaluated before name rules and before the type tables.
+    public var rules: [Rule]
 
     /// Set aside a file that is byte-identical to one already in its destination,
     /// instead of filing a second copy beside it.
@@ -73,6 +88,10 @@ public struct WatchedFolder: Codable, Sendable, Identifiable, Hashable {
     /// Folder duplicates are set aside in. They are moved, never deleted — the whole
     /// point is that you get to decide.
     public var duplicatesFolderName: String
+
+    /// Where `markForReview` puts things. Its own folder so "I could not decide" never
+    /// looks like "I filed this".
+    public var reviewFolderName: String { "Needs Review" }
 
     /// Sweep filed files untouched for this long into the archive. Zero is off.
     public var archiveAfterDays: Int
@@ -90,6 +109,7 @@ public struct WatchedFolder: Codable, Sendable, Identifiable, Hashable {
     public init(
         id: UUID = UUID(),
         url: URL,
+        bookmark: Data? = nil,
         isAutoEnabled: Bool = true,
         scheme: SortScheme = .category,
         folderNames: [FileCategory: String] = [:],
@@ -98,6 +118,7 @@ public struct WatchedFolder: Codable, Sendable, Identifiable, Hashable {
         overrides: [String: FileCategory] = [:],
         minimumAgeSeconds: Int = 0,
         nameRules: [NameRule] = [],
+        rules: [Rule] = [],
         quarantinesDuplicates: Bool = true,
         duplicatesFolderName: String = "Duplicates",
         archiveAfterDays: Int = 0,
@@ -107,6 +128,7 @@ public struct WatchedFolder: Codable, Sendable, Identifiable, Hashable {
     ) {
         self.id = id
         self.url = url
+        self.bookmark = bookmark
         self.isAutoEnabled = isAutoEnabled
         self.scheme = scheme
         self.folderNames = folderNames
@@ -115,6 +137,7 @@ public struct WatchedFolder: Codable, Sendable, Identifiable, Hashable {
         self.overrides = overrides
         self.minimumAgeSeconds = minimumAgeSeconds
         self.nameRules = nameRules
+        self.rules = rules
         self.quarantinesDuplicates = quarantinesDuplicates
         self.duplicatesFolderName = duplicatesFolderName
         self.archiveAfterDays = archiveAfterDays
@@ -152,6 +175,8 @@ public struct WatchedFolder: Codable, Sendable, Identifiable, Hashable {
     public var managedFolderNames: Set<String> {
         var names = Set(FileCategory.allCases.map { folderName(for: $0) })
         names.formUnion(nameRules.map(\.folderName))
+        names.formUnion(rules.compactMap(\.destinationFolder))
+        names.insert(reviewFolderName)
         names.insert(duplicatesFolderName)
         names.insert(archiveFolderName)
         names.formUnion(ContentLabel.allCases.map(\.defaultFolderName))

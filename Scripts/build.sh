@@ -26,6 +26,8 @@ CONFIG="release"
 # build, so macOS silently revokes any privacy grant each time — and the stale entry
 # still reads as enabled in System Settings, which looks like a broken app rather
 # than an unauthorised one.
+ENTITLEMENTS="Resources/Tidewell.entitlements"
+
 SELF_SIGNED="Tidewell Self-Signed"
 if [ -z "${SIGN_IDENTITY:-}" ]; then
     if security find-identity -v -p codesigning 2>/dev/null | grep -q "$SELF_SIGNED"; then
@@ -160,12 +162,15 @@ if [ -x "$PROCESSOR" ]; then
 fi
 
 echo "==> Signing (identity: $SIGN_IDENTITY)"
+# The entitlements go on every path. Signing without them produces an app that looks
+# identical and quietly runs outside the sandbox, which is the worst of both worlds.
 if [ "$SIGN_IDENTITY" = "-" ]; then
-    codesign --force --sign - --timestamp=none "$APP"
+    codesign --force --sign - --entitlements "$ENTITLEMENTS" --timestamp=none "$APP"
 elif [ "$SIGN_IDENTITY" = "$SELF_SIGNED" ]; then
-    codesign --force --sign "$SIGN_IDENTITY" --timestamp=none "$APP"
+    codesign --force --sign "$SIGN_IDENTITY" --entitlements "$ENTITLEMENTS" --timestamp=none "$APP"
 else
-    codesign --force --sign "$SIGN_IDENTITY" --options runtime --timestamp "$APP"
+    codesign --force --sign "$SIGN_IDENTITY" --entitlements "$ENTITLEMENTS" \
+        --options runtime --timestamp "$APP"
 fi
 
 codesign --verify --strict --verbose=2 "$APP" 2>&1 | sed 's/^/    /'

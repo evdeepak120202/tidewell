@@ -40,6 +40,9 @@ struct SetupWizard: View {
     struct FolderCandidate: Identifiable {
         let id = UUID()
         let url: URL
+        /// Minted when the user picks the folder, because inside the sandbox it cannot
+        /// be minted later from a stored path.
+        var bookmark: Data?
         var isSelected: Bool
         var looseFileCount: Int
         var counts: [FileCategory: Int]
@@ -135,9 +138,13 @@ struct SetupWizard: View {
                                 VStack(alignment: .leading, spacing: 0) {
                                     Text(candidate.url.lastPathComponent)
                                         .font(.system(size: 12, weight: .medium))
-                                    Text(candidate.looseFileCount == 0
-                                         ? "Nothing loose right now"
-                                         : "\(candidate.looseFileCount) loose file\(candidate.looseFileCount == 1 ? "" : "s")")
+                                    Text(
+                                        candidate.bookmark == nil && FolderAccess.isSandboxed
+                                            ? "Tidewell will ask permission for this folder"
+                                            : candidate.looseFileCount == 0
+                                                ? "Nothing loose right now"
+                                                : "\(candidate.looseFileCount) loose file\(candidate.looseFileCount == 1 ? "" : "s")"
+                                    )
                                         .font(.system(size: 11))
                                         .foregroundStyle(.secondary)
                                 }
@@ -395,7 +402,10 @@ struct SetupWizard: View {
         var found: [FolderCandidate] = []
         for url in suggested where FileManager.default.fileExists(atPath: url.path) {
             let (count, counts) = Self.survey(url)
-            found.append(FolderCandidate(url: url, isSelected: url.lastPathComponent == "Downloads",
+            // Suggested folders are not yet granted, so there is nothing to bookmark
+            // until the user confirms them through the panel.
+            found.append(FolderCandidate(url: url, bookmark: nil,
+                                         isSelected: url.lastPathComponent == "Downloads",
                                          looseFileCount: count, counts: counts))
         }
         candidates = found
@@ -437,12 +447,51 @@ struct SetupWizard: View {
                 continue
             }
             let (count, counts) = Self.survey(url)
-            candidates.append(FolderCandidate(url: url.standardizedFileURL, isSelected: true,
-                                              looseFileCount: count, counts: counts))
+            candidates.append(FolderCandidate(
+                url: url.standardizedFileURL,
+                bookmark: try? FolderAccess.makeBookmark(for: url.standardizedFileURL),
+                isSelected: true, looseFileCount: count, counts: counts))
         }
     }
 
+    /// Turn a suggested folder into a granted one.
+    ///
+    /// Inside the sandbox, listing `~/Downloads` is not permitted until the user has
+    /// chosen it — so a suggestion is only a suggestion, and confirming it has to go
+    /// through the panel. The panel opens *at* that folder, so it stays one click.
+    @MainActor
+    private func grantAccess(to candidate: FolderCandidate) -> FolderCandidate? {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.directoryURL = candidate.url
+        panel.prompt = "Allow"
+        panel.message = "Choose \(candidate.url.lastPathComponent) so Tidewell can watch it."
+
+        guard panel.runModal() == .OK, let url = panel.url else { return nil }
+        let (count, counts) = Self.survey(url)
+        return FolderCandidate(
+            url: url.standardizedFileURL,
+            bookmark: try? FolderAccess.makeBookmark(for: url.standardizedFileURL),
+            isSelected: true, looseFileCount: count, counts: counts
+        )
+    }
+
     private func goToStyle() async {
+        // Anything selected but not yet granted needs the panel before it can be read.
+        if FolderAccess.isSandboxed {
+            for index in candidates.indices where candidates[index].isSelected {
+                guard candidates[index].bookmark == nil else { continue }
+                if let granted = grantAccess(to: candidates[index]) {
+                    candidates[index] = granted
+                } else {
+                    candidates[index].isSelected = false
+                }
+            }
+            guard !selectedCandidates.isEmpty else { return }
+        }
+
         // Pre-select from what is actually in the chosen folders, so the common case is
         // one click rather than a decision the user has no basis to make yet.
         var combined: [FileCategory: Int] = [:]
@@ -459,7 +508,8 @@ struct SetupWizard: View {
         isWorking = true
         plans = [:]
         for candidate in selectedCandidates {
-            var folder = style.apply(to: WatchedFolder(url: candidate.url))
+            var folder = style.apply(to: WatchedFolder(url: candidate.url,
+                                                       bookmark: candidate.bookmark))
             folder.nameRules = style.suggestedRules
             plans[candidate.id] = await env.preview(folder)
         }
@@ -468,7 +518,8 @@ struct SetupWizard: View {
 
     private func finish(organizeBacklog: Bool) {
         for candidate in selectedCandidates {
-            var folder = style.apply(to: WatchedFolder(url: candidate.url))
+            var folder = style.apply(to: WatchedFolder(url: candidate.url,
+                                                       bookmark: candidate.bookmark))
             folder.nameRules = style.suggestedRules
             // A folder whose name suggests private documents stays off even when the
             // user said yes overall. They can switch it on deliberately.
