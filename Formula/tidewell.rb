@@ -33,21 +33,40 @@ class Tidewell < Formula
     system "./Scripts/build.sh"
 
     prefix.install "build/Tidewell.app"
-    # Symlink so `open -a Tidewell` and Spotlight find it.
+
+    # A formula only links *binaries* into the prefix, so without this the app exists but
+    # Spotlight, Launchpad and the Applications folder never see it — which for a Mac app
+    # reads as "the install did nothing".
+    #
+    # The link points at `opt_prefix`, not the versioned Cellar path: opt is stable across
+    # upgrades, so the folder-access grants and login-item registration macOS ties to the
+    # bundle path survive a `brew upgrade` instead of resetting every time.
+    (Dir.home/"Applications").mkpath
+    ln_sf opt_prefix/"Tidewell.app", Dir.home/"Applications/Tidewell.app"
+
     bin.write_exec_script "#{prefix}/Tidewell.app/Contents/MacOS/Tidewell"
   end
 
   def caveats
     <<~EOS
-      Tidewell is a menu bar app. Launch it with:
+      Tidewell has been linked into your Applications folder, so it is in Spotlight and
+      Launchpad. Open it from there, or with:
 
-        open #{prefix}/Tidewell.app
+        open ~/Applications/Tidewell.app
 
-      To have it start at login, use the toggle in Tidewell's own Settings — it registers
-      through SMAppService so you can revoke it in System Settings › General › Login Items.
+      It is a menu bar app — there is no Dock icon and no window at launch. Look for the
+      mark in the menu bar.
+
+      To start it at login, use the toggle in Tidewell's own Settings. It registers through
+      SMAppService, so you can always revoke it in System Settings › General › Login Items.
 
       Tidewell never deletes files. Everything it does can be previewed first and undone
       afterwards.
+
+      `brew uninstall` leaves ~/Applications/Tidewell.app behind as a broken link. Remove
+      it with:
+
+        rm ~/Applications/Tidewell.app
     EOS
   end
 
