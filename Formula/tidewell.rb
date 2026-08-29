@@ -34,30 +34,27 @@ class Tidewell < Formula
 
     prefix.install "build/Tidewell.app"
 
-    # A formula only links *binaries* into the prefix, so without this the app exists but
-    # Spotlight, Launchpad and the Applications folder never see it — which for a Mac app
-    # reads as "the install did nothing".
-    #
-    # The link points at `opt_prefix`, not the versioned Cellar path: opt is stable across
-    # upgrades, so the folder-access grants and login-item registration macOS ties to the
-    # bundle path survive a `brew upgrade` instead of resetting every time.
-    # `Dir.home` is a String, so it needs wrapping before Pathname's `/` works.
-    user_apps = Pathname.new(Dir.home)/"Applications"
-    user_apps.mkpath
-    ln_sf opt_prefix/"Tidewell.app", user_apps/"Tidewell.app"
-
     bin.write_exec_script "#{prefix}/Tidewell.app/Contents/MacOS/Tidewell"
   end
 
   def caveats
     <<~EOS
-      Tidewell has been linked into your Applications folder, so it is in Spotlight and
-      Launchpad. Open it from there, or with:
+      Tidewell is installed, but Homebrew formulae only link binaries — the app itself
+      stays in the Cellar, where Spotlight and Launchpad will not find it. To put it in
+      your Applications folder:
 
-        open ~/Applications/Tidewell.app
+        ln -sf #{opt_prefix}/Tidewell.app ~/Applications/
 
-      It is a menu bar app — there is no Dock icon and no window at launch. Look for the
-      mark in the menu bar.
+      (Homebrew sandboxes both the install and post-install steps, so a formula cannot
+      write outside its own prefix and has to ask you to run this. The link points at
+      opt, so it stays valid across upgrades.)
+
+      Or launch it without linking:
+
+        open #{opt_prefix}/Tidewell.app
+
+      It is a menu bar app — no Dock icon and no window at launch. Look for the mark in
+      the menu bar.
 
       To start it at login, use the toggle in Tidewell's own Settings. It registers through
       SMAppService, so you can always revoke it in System Settings › General › Login Items.
@@ -65,8 +62,7 @@ class Tidewell < Formula
       Tidewell never deletes files. Everything it does can be previewed first and undone
       afterwards.
 
-      `brew uninstall` leaves ~/Applications/Tidewell.app behind as a broken link. Remove
-      it with:
+      If you made the link, `brew uninstall` leaves it behind as a broken alias:
 
         rm ~/Applications/Tidewell.app
     EOS
