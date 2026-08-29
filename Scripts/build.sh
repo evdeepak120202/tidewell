@@ -13,8 +13,10 @@ cd "$(dirname "$0")/.."
 
 APP_NAME="Tidewell"
 BUNDLE_ID="space.iam-deepak.tidewell"
-VERSION="1.0"
-BUILD_NUMBER="1"
+# Overridden by the release workflow from the git tag. The default is what a local
+# build reports, so `About` never claims a version that was never released.
+VERSION="${VERSION:-0.1.0}"
+BUILD_NUMBER="${BUILD_NUMBER:-$(git rev-list --count HEAD 2>/dev/null || echo 1)}"
 MIN_MACOS="26.0"
 
 CONFIG="release"
